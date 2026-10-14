@@ -1,6 +1,6 @@
 # AETHEL
 
-A complete menswear concept built with Vite, JavaScript, CSS, GSAP, Lenis and Three.js.
+A complete three-page menswear concept built with Vite, JavaScript, CSS, GSAP, Lenis and Three.js.
 
 ```bash
 npm install
@@ -20,3 +20,5 @@ Asset briefs: a tactile tobacco leather jacket with natural folds and brushed ha
 Design research: [Zegna](https://borninoasi.zegna.com/experience/oasi/), [Moncler by Me](https://www.ramonprieto.studio/digital/moncler), [LEMAIRE](https://www.lemaire.fr/fr/pages/defile-printemps-ete-2025), and [Vyking](https://www.vyking.io/).
 
 Verified in the browser: 390px phone layout without horizontal overflow, navigation, category filters, loaded garment images, optional 3D previews without console errors, nested size guides, adding/removing products, quantity totals, bag persistence after reload, demo checkout and newsletter confirmation. Production compilation and source syntax checks pass.
+
+Routes: `/` for the home experience, `/collection/` for the full collection, and `/atelier/` for the draggable WebGL wardrobe. The homepage also features a real-time 3D sculptural installation. `scripts/pages.mjs` generates the secondary HTML pages from the shared shell before development and builds.

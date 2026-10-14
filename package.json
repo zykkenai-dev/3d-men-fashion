@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5187 --strictPort",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "predev": "node scripts/pages.mjs",
+    "prebuild": "node scripts/pages.mjs"
   },
   "dependencies": {
     "gsap": "^3.14.2",

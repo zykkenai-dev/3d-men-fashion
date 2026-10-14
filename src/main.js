@@ -43,6 +43,7 @@ function toast(message) { const el = $('.toast'); el.textContent = message; el.c
 // Photographic garments sit in a real CSS 3D scene, with responsive light and perspective.
 const heroObject = $('.hero-object');
 let heroColor = 'Tobacco';
+let spatialScene;
 const colorFilters = {
   Tobacco: 'none', Ink: 'saturate(0.12) brightness(0.35) contrast(1.12)',
   Stone: 'saturate(0.18) brightness(1.48) contrast(0.85)',
@@ -54,9 +55,9 @@ function garmentFilter(id, color) {
   if (id === 'trouser' && color === 'Stone') return 'saturate(0.15) brightness(2.2) contrast(0.8)';
   return colorFilters[color] || 'none';
 }
-function resetPerspective() { gsap.to(heroObject, { rotationY: -8, rotationX: 0, rotationZ: -4, x: 0, y: 0, duration: .8, ease: 'power3.out' }); }
+function resetPerspective() { if (!heroObject) return; gsap.to(heroObject, { rotationY: -8, rotationX: 0, rotationZ: -4, x: 0, y: 0, duration: .8, ease: 'power3.out' }); }
 resetPerspective();
-if (!reducedMotion) {
+if (heroObject && !reducedMotion) {
   const rotateX = gsap.quickTo(heroObject, 'rotationX', { duration: .8, ease: 'power3.out' });
   const rotateY = gsap.quickTo(heroObject, 'rotationY', { duration: .8, ease: 'power3.out' });
   const moveX = gsap.quickTo(heroObject, 'x', { duration: .8, ease: 'power3.out' });
@@ -70,10 +71,11 @@ if (!reducedMotion) {
   });
   $('.hero-stage').addEventListener('pointerleave', resetPerspective);
 }
-$('.rotation-reset').addEventListener('click', () => { resetPerspective(); toast('A fresh perspective.'); });
+$('.rotation-reset')?.addEventListener('click', () => { resetPerspective(); toast('A fresh perspective.'); });
 $$('.hero-swatches .swatch').forEach(button => button.addEventListener('click', () => {
   $$('.hero-swatches .swatch').forEach(el => { el.classList.toggle('active', el === button); el.setAttribute('aria-pressed', String(el === button)); });
   heroColor = button.dataset.colorName;
+  spatialScene?.setColor(button.dataset.color);
   $('#hero-photo').style.filter = garmentFilter('field', heroColor);
   toast(`The Field Jacket in ${heroColor}.`);
 }));
@@ -84,22 +86,22 @@ const loaderProgress = gsap.to(loadState, { value: 88, duration: 1.65, ease: 'po
   $('#load-percent').textContent = String(Math.floor(loadState.value)).padStart(2, '0');
   $('.loader-track span').style.width = `${loadState.value}%`;
 } });
-const heroImageReady = $('#hero-photo').complete ? Promise.resolve() : new Promise(resolve => { $('#hero-photo').addEventListener('load', resolve, { once: true }); $('#hero-photo').addEventListener('error', resolve, { once: true }); });
-await Promise.allSettled([Promise.race([Promise.all([document.fonts.ready, heroImageReady]), new Promise(resolve => setTimeout(resolve, 3500))]), new Promise(resolve => setTimeout(resolve, reducedMotion ? 50 : 1700))]);
+const heroImageReady = !$('#hero-photo') || $('#hero-photo').complete ? Promise.resolve() : new Promise(resolve => { $('#hero-photo').addEventListener('load', resolve, { once: true }); $('#hero-photo').addEventListener('error', resolve, { once: true }); });
+await Promise.allSettled([Promise.race([Promise.all([document.fonts.ready, heroImageReady]), new Promise(resolve => setTimeout(resolve, 3500))]), new Promise(resolve => setTimeout(resolve, reducedMotion ? 50 : document.body.dataset.page ? 150 : 1200))]);
 loaderProgress.kill();
 gsap.to(loadState, { value: 100, duration: .3, onUpdate() { $('#load-percent').textContent = Math.floor(loadState.value); $('.loader-track span').style.width = `${loadState.value}%`; } });
 const intro = gsap.timeline({ delay: .35, onComplete: () => { $('.loader').remove(); document.body.classList.remove('is-loading'); ScrollTrigger.refresh(); } });
 intro.to('.loader-brand', { y: -35, opacity: 0, duration: reducedMotion ? .01 : .45, ease: 'power2.in' })
   .to('.loader', { yPercent: -100, duration: reducedMotion ? .01 : .8, ease: 'power3.inOut' }, '-=.1');
 if (!reducedMotion) {
-  intro.from('.hero h1 span', { y: 80, opacity: 0, stagger: .08, duration: 1, ease: 'power3.out' }, '-=.25')
+  if (heroObject) intro.from('.hero h1 span', { y: 80, opacity: 0, stagger: .08, duration: 1, ease: 'power3.out' }, '-=.25')
     .from('.hero-copy p, .hero-copy .button', { y: 25, opacity: 0, stagger: .12, duration: .7 }, '-=.7')
     .from('.hero-stage', { y: 65, opacity: 0, duration: 1.2, ease: 'power2.out' }, '-=1.2');
   $$('.reveal').forEach(el => gsap.from(el, { y: 40, opacity: 0, duration: .95, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
-  gsap.to('.hero-copy', { y: -55, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
-  gsap.to('.orbit', { rotation: 24, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
-  gsap.to('.campaign-image', { yPercent: 12, ease: 'none', scrollTrigger: { trigger: '.campaign', start: 'top bottom', end: 'bottom top', scrub: true } });
-  ScrollTrigger.create({ trigger: '.material-story', start: 'top top', end: 'bottom bottom', scrub: true, onUpdate(self) {
+  if (heroObject) gsap.to('.hero-copy', { y: -55, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
+  if (heroObject) gsap.to('.orbit', { rotation: 24, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
+  if ($('.campaign-image')) gsap.to('.campaign-image', { yPercent: 12, ease: 'none', scrollTrigger: { trigger: '.campaign', start: 'top bottom', end: 'bottom top', scrub: true } });
+  if ($('.material-story')) ScrollTrigger.create({ trigger: '.material-story', start: 'top top', end: 'bottom bottom', scrub: true, onUpdate(self) {
     const progress = self.progress;
     gsap.set('.story-object', { rotationY: -12 + progress * 24, rotationZ: -6 + progress * 12, scale: 1 + Math.sin(progress * Math.PI) * .23, yPercent: -progress * 8 });
     const chapter = Math.min(2, Math.floor(self.progress * 3));
@@ -115,7 +117,7 @@ function updateScroll() {
 }
 window.addEventListener('scroll', updateScroll, { passive: true }); updateScroll();
 window.addEventListener('resize', () => ScrollTrigger.refresh());
-$('.campaign-image img').addEventListener('load', () => ScrollTrigger.refresh());
+$('.campaign-image img')?.addEventListener('load', () => ScrollTrigger.refresh());
 
 $$('.collection-filters button').forEach(button => button.addEventListener('click', () => {
   $$('.collection-filters button').forEach(el => { el.classList.toggle('active', el === button); el.setAttribute('aria-pressed', String(el === button)); });
@@ -143,7 +145,7 @@ function renderBag() {
   $('.bag-summary').hidden = count === 0;
   if (!count) {
     $('.bag-content').innerHTML = '<div class="empty-bag"><h3>Room for something good.</h3><p>Your daily rotation starts here.<br>Find a piece that feels like you.</p><button class="button button-dark" id="shop-empty">Explore the collection</button></div>';
-    $('#shop-empty').addEventListener('click', () => { closeBag(); if (lenis) lenis.scrollTo('#collection', { offset: -74 }); else $('#collection').scrollIntoView(); });
+    $('#shop-empty').addEventListener('click', () => { closeBag(); if (!$('#collection')) { location.href = '/collection/'; return; } if (lenis) lenis.scrollTo('#collection', { offset: -74 }); else $('#collection').scrollIntoView(); });
   } else {
     $('.bag-content').innerHTML = cart.map((item, index) => `<article class="bag-item"><div class="bag-item-art"><img src="/images/${products[item.id].image}.webp" alt="${products[item.id].name}" style="filter:${garmentFilter(item.id, item.color)}"/></div><div><p class="bag-item-name">${products[item.id].name}</p><p class="bag-item-meta">${item.color} / Size ${item.size}</p><div class="bag-item-bottom"><div class="quantity-control"><button data-quantity="${index}" data-delta="-1" aria-label="Decrease quantity of ${products[item.id].name}">−</button><span>${item.qty}</span><button data-quantity="${index}" data-delta="1" aria-label="Increase quantity of ${products[item.id].name}" ${item.qty >= 20 ? 'disabled' : ''}>+</button></div><span class="bag-item-price">${money(products[item.id].price * item.qty)}</span></div><button class="remove-item" data-remove="${index}">Remove</button></div></article>`).join('');
     $$('[data-quantity]').forEach(el => el.addEventListener('click', () => { const index = Number(el.dataset.quantity); const delta = el.dataset.delta; cart[index].qty += Number(delta); if (cart[index].qty <= 0) cart.splice(index, 1); saveBag(); renderBag(); ($(`[data-quantity="${index}"][data-delta="${delta}"]`) || $('.close-bag')).focus(); }));
@@ -230,7 +232,7 @@ $('#size-guide-button').addEventListener('click', () => {
   const trouser = currentProduct === 'trouser';
   showInfo(`<span class="eyebrow">FIND YOUR FORM</span><h2>The right fit.</h2><p>${trouser ? 'The Studio Trouser sits naturally at the waist with a relaxed, straight leg. Choose your usual waist size.' : 'Our pieces have a relaxed silhouette. Choose your usual size for an easy fit, or size down for a closer shape.'}</p><table class="size-table"><thead><tr><th>Size</th><th>${trouser ? 'Waist (cm)' : 'Chest (cm)'}</th><th>${trouser ? 'Inseam (cm)' : 'Body length (cm)'}</th></tr></thead><tbody>${(trouser ? [['28',71,78],['30',76,79],['32',81,80],['34',86,81],['36',91,82]] : [['XS',98,62],['S',104,64],['M',110,66],['L',116,68],['XL',122,70]]).map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table><p>Illustrative garment measurements for this concept collection.</p>`);
 });
-$('#open-editorial').addEventListener('click', () => {
+$('#open-editorial')?.addEventListener('click', () => {
   showInfo('<span class="eyebrow">FIELD NOTES / LOOK 001</span><h2>In the open.</h2><p>A slower morning. A long way home. A sunlit wall that asks for nothing. Our first collection is an invitation to find a little space in the everyday.</p><img src="/images/campaign.webp" alt="The first AETHEL editorial, shot against sunlit stone"/><p>The Field Jacket over a simple layer, with the Studio Trouser in Stone. A balance of structure and ease, ready to go wherever the day takes you.</p><button class="button button-dark" id="shop-story">Explore the Field Jacket</button>');
   $('#shop-story').addEventListener('click', () => { infoDialog.close(); openProduct('field'); });
 });
@@ -262,3 +264,31 @@ document.addEventListener('keydown', event => {
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 });
 window.addEventListener('pagehide', () => { detailScene?.dispose(); });
+
+
+// The same spatial installation powers the home hero and the dedicated atelier.
+const spatialCanvas = $('#spatial-hero') || $('#atelier-canvas');
+if (spatialCanvas) {
+  const compact = spatialCanvas.id === 'spatial-hero';
+  const readyObserver = new MutationObserver(() => {
+    if (spatialCanvas.dataset.ready === 'true') spatialCanvas.parentElement.classList.add('spatial-ready');
+    if (spatialCanvas.dataset.fallback === 'true') spatialCanvas.parentElement.classList.remove('spatial-ready');
+  });
+  readyObserver.observe(spatialCanvas, { attributes: true, attributeFilter: ['data-ready', 'data-fallback'] });
+  import('./showroom.js').then(({ createShowroom }) => {
+    spatialScene = createShowroom(spatialCanvas, { compact, onSelect(index) {
+      const ids = ['field', 'knit', 'trouser']; const product = products[ids[index]];
+      $$('[data-look]').forEach(button => { const active = Number(button.dataset.look) === index; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+      if ($('#spatial-name')) $('#spatial-name').textContent = product.name;
+      if ($('#spatial-price')) $('#spatial-price').textContent = money(product.price);
+      if ($('#spatial-shop')) $('#spatial-shop').dataset.openProduct = ids[index];
+    } });
+    const visibility = new IntersectionObserver(entries => spatialScene?.setActive(entries[0].isIntersecting), {rootMargin:'100px'});
+    visibility.observe(spatialCanvas);
+    $$('[data-look]').forEach(button => button.addEventListener('click', () => spatialScene.select(Number(button.dataset.look))));
+    $('#spatial-reset')?.addEventListener('click', () => spatialScene.reset());
+    $('.rotation-reset')?.addEventListener('click', () => spatialScene.reset());
+    window.addEventListener('pagehide', () => { spatialScene?.dispose(); readyObserver.disconnect(); visibility.disconnect(); });
+  }).catch(() => { spatialCanvas.parentElement.classList.remove('spatial-ready'); });
+}
+$$('.desktop-nav a, .menu-overlay nav a').forEach(link => { if (link.getAttribute('href') === location.pathname) link.setAttribute('aria-current', 'page'); });
