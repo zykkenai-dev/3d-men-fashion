@@ -9,7 +9,7 @@ npm run dev
 
 Open http://localhost:5187. `npm run build` generates `dist/`.
 
-Photographic garments lead the collection and layered hero. Product dialogs include an optional interactive 3D silhouette view. The site supports reduced motion, phone layouts, keyboard navigation, size guides, filters, color selection, bag quantities, browser persistence and a demonstration checkout.
+The home hero places photographic garments in a real-time WebGL gallery with slim metal supports, a single stone stage and soft shadows. The collection includes material close-ups, styling notes and expandable care guidance. The atelier updates garment descriptions, fit and material facts as you explore, with a dedicated fit guide. Product dialogs include an optional interactive 3D silhouette view. The site supports reduced motion, phone layouts, keyboard navigation, size guides, filters, color selection, bag quantities, browser persistence and a demonstration checkout.
 
 This is a concept store. It collects no payment, sends no newsletter email and ships no products. Checkout input stays in memory; bag contents and newsletter interest stay in browser storage.
 

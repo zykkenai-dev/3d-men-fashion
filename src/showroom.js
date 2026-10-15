@@ -31,12 +31,11 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
   const colorUniforms = { mode: { value: 0 }, tint: { value: new THREE.Color('#6b3924') } };
   const geometries = [];
   const own = (resource) => { (resource.isMaterial ? materials : geometries).push(resource); return resource; };
-  const stone = own(new THREE.MeshStandardMaterial({ color: '#c8bba6', roughness: 0.88, metalness: 0.03 }));
-  const lightStone = own(new THREE.MeshStandardMaterial({ color: '#e5ded0', roughness: 0.8 }));
-  const bronze = own(new THREE.MeshStandardMaterial({ color: '#b88954', metalness: 0.68, roughness: 0.27, emissive: '#604021', emissiveIntensity: 0.16 }));
-  const darkBronze = own(new THREE.MeshStandardMaterial({ color: '#49362a', metalness: 0.5, roughness: 0.34 }));
-  scene.add(new THREE.HemisphereLight(0xfff4de, 0x6d5847, 2.5));
-  const key = new THREE.DirectionalLight(0xffedce, 4);
+  const stone = own(new THREE.MeshStandardMaterial({ color: '#d5cfc2', roughness: 0.94, metalness: 0.01 }));
+  const iron = own(new THREE.MeshStandardMaterial({ color: '#343632', metalness: 0.64, roughness: 0.5 }));
+  const nickel = own(new THREE.MeshStandardMaterial({ color: '#9a9b92', metalness: 0.76, roughness: 0.4 }));
+  scene.add(new THREE.HemisphereLight(0xfffaf0, 0x72716a, 2.3));
+  const key = new THREE.DirectionalLight(0xfff6e8, 3.1);
   key.position.set(-4, 6, 5);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -46,7 +45,7 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
   key.shadow.camera.bottom = -5;
   key.shadow.normalBias = 0.045;
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xffffff, 2.5);
+  const rim = new THREE.DirectionalLight(0xffffff, 1.8);
   rim.position.set(4, 3, -3);
   scene.add(rim);
 
@@ -59,31 +58,37 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
     parent.add(mesh);
     return mesh;
   }
-  function ring(radius, thickness, material, parent = installation) {
-    const mesh = new THREE.Mesh(own(new THREE.TorusGeometry(radius, thickness, 10, 120)), material);
-    mesh.castShadow = true;
+  function rod(from, to, radius, material, parent = installation) {
+    const start = new THREE.Vector3(...from), end = new THREE.Vector3(...to);
+    const mesh = new THREE.Mesh(own(new THREE.CylinderGeometry(radius, radius, start.distanceTo(end), 12)), material);
+    mesh.position.copy(start).add(end).multiplyScalar(0.5);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.sub(start).normalize());
     parent.add(mesh);
     return mesh;
   }
 
-  const baseRadius = compact ? 1.8 : 4.35;
-  cylinder(baseRadius, 0.13, -1.68, darkBronze);
-  cylinder(baseRadius * 0.97, 0.12, -1.55, lightStone);
-  cylinder(baseRadius * 0.9, 0.08, -1.45, stone);
-  const ground = new THREE.Mesh(own(new THREE.PlaneGeometry(24, 24)), own(new THREE.ShadowMaterial({ color: '#62432f', opacity: 0.17 })));
+  // A single stone plinth gives the garments an architectural setting.
+  const floor = cylinder(compact ? 1.87 : 4.15, 0.075, -1.42, stone);
+  floor.scale.z = compact ? 0.53 : 0.57;
+  const ground = new THREE.Mesh(own(new THREE.PlaneGeometry(24, 24)), own(new THREE.ShadowMaterial({ color: '#30332c', opacity: 0.055 })));
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1.77;
+  ground.position.y = -1.47;
   ground.receiveShadow = true;
   scene.add(ground);
-  const floorOrbit = ring(compact ? 1.96 : 4.57, 0.013, bronze);
-  floorOrbit.rotation.x = -Math.PI / 2;
-  floorOrbit.position.y = -1.66;
-  const orbit = ring(compact ? 2.16 : 4.35, compact ? 0.026 : 0.018, bronze);
-  orbit.position.set(0, compact ? 0.1 : -0.15, compact ? -0.45 : -1.6);
-  orbit.rotation.set(compact ? 0.08 : 0.65, compact ? -0.3 : 0, -0.2);
-  const secondOrbit = ring(compact ? 2.2 : 4.39, 0.008, bronze);
-  secondOrbit.position.copy(orbit.position);
-  secondOrbit.rotation.set(compact ? 0.6 : 0.66, compact ? 0.5 : 0.03, 0.28);
+
+  // Diffused contact shadows avoid turning a photographic plane into a hard cutout.
+  const shadowCanvas = document.createElement('canvas');
+  shadowCanvas.width = shadowCanvas.height = 128;
+  const shadowContext = shadowCanvas.getContext('2d');
+  const gradient = shadowContext.createRadialGradient(64, 64, 4, 64, 64, 62);
+  gradient.addColorStop(0, 'rgba(35,38,31,0.28)');
+  gradient.addColorStop(0.45, 'rgba(35,38,31,0.12)');
+  gradient.addColorStop(1, 'rgba(35,38,31,0)');
+  shadowContext.fillStyle = gradient;
+  shadowContext.fillRect(0, 0, 128, 128);
+  const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
+  disposedResources.add(shadowTexture);
+  const shadowMaterial = own(new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false, toneMapped: false }));
 
   const loader = new THREE.TextureLoader();
   const count = compact ? 1 : 3;
@@ -92,7 +97,7 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
     const group = new THREE.Group();
     installation.add(group);
     const photoHeight = compact ? 3.1 : i === 2 ? 2.8 : 2.7;
-    const photoWidth = compact ? 2.81 : i === 2 ? 1.78 : 2.45;
+    const photoWidth = photoHeight * [1.067, 1.094, 0.667][i];
     const geometry = own(new THREE.PlaneGeometry(photoWidth, photoHeight, 22, 24));
     const positions = geometry.attributes.position;
     for (let v = 0; v < positions.count; v++) {
@@ -117,13 +122,37 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
     }
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.y = compact ? 0.38 : 0.38;
-    mesh.castShadow = true;
+    mesh.castShadow = false;
     mesh.visible = false;
     group.add(mesh);
     const depthMaterial = own(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.12 }));
     mesh.customDepthMaterial = depthMaterial;
-    const pedestal = cylinder(compact ? 1.33 : 1.1, compact ? 0.35 : 0.23, compact ? -1.24 : -1.28, lightStone, group);
-    cylinder(compact ? 1.4 : 1.14, 0.035, compact ? -1.05 : -1.15, bronze, group);
+    const shadow = new THREE.Mesh(own(new THREE.PlaneGeometry(compact ? 3.25 : 2.5, compact ? 1.65 : 1.4)), shadowMaterial);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(0, -1.377, 0.08);
+    group.add(shadow);
+
+    const collarHeight = 0.38 + photoHeight / 2;
+    const railHeight = collarHeight + 0.25;
+    const supportX = compact ? 1.64 : 0;
+    rod([supportX, -1.377, -0.34], [supportX, railHeight, -0.34], compact ? 0.018 : 0.014, iron, group);
+    rod([supportX, railHeight, -0.34], [0, railHeight, -0.34], 0.014, iron, group);
+    rod([supportX - 0.3, -1.368, -0.34], [supportX + 0.3, -1.368, -0.34], 0.012, iron, group);
+    const hanger = new THREE.Group();
+    group.add(hanger);
+    const hangerTop = collarHeight + 0.015;
+    const hangerWidth = i === 2 ? 0.42 : 0.54;
+    rod([0, hangerTop, -0.12], [-hangerWidth, hangerTop - 0.23, -0.12], 0.011, nickel, hanger);
+    rod([-hangerWidth, hangerTop - 0.23, -0.12], [hangerWidth, hangerTop - 0.23, -0.12], 0.011, nickel, hanger);
+    rod([hangerWidth, hangerTop - 0.23, -0.12], [0, hangerTop, -0.12], 0.011, nickel, hanger);
+    const hookCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, hangerTop, -0.12),
+      new THREE.Vector3(0, hangerTop + 0.12, -0.12),
+      new THREE.Vector3(0.015, railHeight + 0.025, -0.26),
+      new THREE.Vector3(0.075, railHeight + 0.025, -0.34),
+      new THREE.Vector3(0.075, railHeight - 0.03, -0.34),
+    ]);
+    hanger.add(new THREE.Mesh(own(new THREE.TubeGeometry(hookCurve, 20, 0.01, 8, false)), nickel));
     const texture = loader.load(`/images/${garments[i]}.webp`, () => {
       if (disposed) { texture.dispose(); return; }
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -136,7 +165,7 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
       if (!active) renderer.render(scene, camera);
     }, undefined, () => { canvas.dataset.fallback = 'true'; });
     disposedResources.add(texture);
-    pieces.push({ group, mesh, pedestal, phase: i * TAU / 3 });
+    pieces.push({ group, mesh, hanger, phase: i * TAU / 3 });
   }
 
   function resize() {
@@ -145,8 +174,8 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
     const width = Math.max(1, rect.width), height = Math.max(1, rect.height);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.position.set(0, compact ? 1.35 : 2.2, compact ? Math.max(7.1, 4.65 / camera.aspect) : Math.max(10.4, 7.3 / camera.aspect));
-    camera.lookAt(0, compact ? -0.12 : -0.3, 0);
+    camera.position.set(0, compact ? 0.9 : 1.85, compact ? Math.max(6.6, 5.65 / camera.aspect) : Math.max(10.1, 7.2 / camera.aspect));
+    camera.lookAt(0, compact ? 0.2 : -0.1, 0);
     camera.updateProjectionMatrix();
     if (!active) renderer.render(scene, camera);
   }
@@ -216,19 +245,17 @@ export function createShowroom(canvas, { compact = false, onSelect = () => {} } 
     smoothPointer.lerp(pointer, reducedMotion ? 0 : ease);
     installation.rotation.y = compact ? currentAngle + smoothPointer.x * 0.13 : smoothPointer.x * 0.025;
     installation.rotation.x = reducedMotion ? 0 : smoothPointer.y * 0.025;
-    if (!reducedMotion) {
-      orbit.rotation.y = (compact ? -0.3 : 0) + Math.sin(time * 0.3) * (compact ? 0.15 : 0.035);
-      secondOrbit.rotation.y = (compact ? 0.5 : 0.03) + Math.sin(time * 0.22) * 0.1;
-    }
     for (const piece of pieces) {
       if (!compact) {
         const angle = currentAngle + piece.phase;
-        piece.group.position.set(Math.sin(angle) * 2.75, 0, Math.cos(angle) * 1.55 - 0.55);
         const depthScale = 0.84 + (Math.cos(angle) + 1) * 0.08;
+        piece.group.position.set(Math.sin(angle) * 2.75, -1.377 * (1 - depthScale), Math.cos(angle) * 1.55 - 0.55);
         piece.group.scale.setScalar(depthScale);
         piece.mesh.rotation.y = -installation.rotation.y + Math.sin(angle) * 0.13;
       }
-      piece.mesh.position.y = 0.38 + (reducedMotion ? 0 : Math.sin(time * 0.65 + piece.phase) * 0.065);
+      const sway = reducedMotion ? 0 : Math.sin(time * 0.6 + piece.phase) * 0.009;
+      piece.mesh.rotation.z = sway;
+      piece.hanger.rotation.z = sway;
     }
     renderer.render(scene, camera);
     frame = requestAnimationFrame(tick);

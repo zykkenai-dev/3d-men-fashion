@@ -17,6 +17,13 @@ const products = {
   trouser: { name: 'The Studio Trouser', type: 'trousers', image: 'trousers', category: 'THE FOUNDATION / TAILORING', price: 11900, description: 'A good foundation changes everything. Relaxed wool-blend trousers with a softly tailored waist, front pleats, and room through the leg. For days that do not stand still.', care: 'Soft wool blend. Dry clean when needed. Air between wears. Steam gently to relax creases and store on a trouser hanger.', colors: [{ name: 'Charcoal', hex: '#353633' }, { name: 'Stone', hex: '#b4a18a' }], sizes: ['28', '30', '32', '34', '36'] },
 };
 
+
+const garmentFacts = {
+  field: { material: 'Supple leather', fit: 'Relaxed shoulder, cropped length', wear: 'Over the Essential Knit' },
+  knit: { material: 'Fine merino wool', fit: 'Generous crewneck silhouette', wear: 'With the Studio Trouser' },
+  trouser: { material: 'Soft wool blend', fit: 'Natural waist, relaxed straight leg', wear: 'With a knit or the Field Jacket' },
+};
+
 let lenis;
 if (!reducedMotion) {
   lenis = new Lenis({ duration: 1.15, smoothWheel: true, anchors: { offset: -74 } });
@@ -75,6 +82,7 @@ $('.rotation-reset')?.addEventListener('click', () => { resetPerspective(); toas
 $$('.hero-swatches .swatch').forEach(button => button.addEventListener('click', () => {
   $$('.hero-swatches .swatch').forEach(el => { el.classList.toggle('active', el === button); el.setAttribute('aria-pressed', String(el === button)); });
   heroColor = button.dataset.colorName;
+  if ($('#hero-color-name')) $('#hero-color-name').textContent = heroColor.toUpperCase();
   spatialScene?.setColor(button.dataset.color);
   $('#hero-photo').style.filter = garmentFilter('field', heroColor);
   toast(`The Field Jacket in ${heroColor}.`);
@@ -99,7 +107,7 @@ if (!reducedMotion) {
     .from('.hero-stage', { y: 65, opacity: 0, duration: 1.2, ease: 'power2.out' }, '-=1.2');
   $$('.reveal').forEach(el => gsap.from(el, { y: 40, opacity: 0, duration: .95, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
   if (heroObject) gsap.to('.hero-copy', { y: -55, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
-  if (heroObject) gsap.to('.orbit', { rotation: 24, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
+  if ($('.orbit')) gsap.to('.orbit', { rotation: 24, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 } });
   if ($('.campaign-image')) gsap.to('.campaign-image', { yPercent: 12, ease: 'none', scrollTrigger: { trigger: '.campaign', start: 'top bottom', end: 'bottom top', scrub: true } });
   if ($('.material-story')) ScrollTrigger.create({ trigger: '.material-story', start: 'top top', end: 'bottom bottom', scrub: true, onUpdate(self) {
     const progress = self.progress;
@@ -281,6 +289,8 @@ if (spatialCanvas) {
       $$('[data-look]').forEach(button => { const active = Number(button.dataset.look) === index; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
       if ($('#spatial-name')) $('#spatial-name').textContent = product.name;
       if ($('#spatial-price')) $('#spatial-price').textContent = money(product.price);
+      if ($('#spatial-description')) $('#spatial-description').textContent = product.description;
+      if ($('#spatial-facts')) { const facts = garmentFacts[ids[index]]; $('#spatial-facts').innerHTML = `<div><dt>Material</dt><dd>${facts.material}</dd></div><div><dt>Fit</dt><dd>${facts.fit}</dd></div><div><dt>Wear it with</dt><dd>${facts.wear}</dd></div>`; }
       if ($('#spatial-shop')) $('#spatial-shop').dataset.openProduct = ids[index];
     } });
     const visibility = new IntersectionObserver(entries => spatialScene?.setActive(entries[0].isIntersecting), {rootMargin:'100px'});
